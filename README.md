@@ -2,6 +2,18 @@
 
 Keeps changelogs and bidirectional traceability for documents.
 
+## Quick Start
+
+To install dependencies and run executable. Requires `stack`.
+
+```
+> stack setup
+> stack build
+> stack exec docgraph-exe
+```
+
+Open a browser and go to `http://localhost:3000`.
+
 
 ## Functionality
 
