@@ -8,6 +8,7 @@ import Servant
 import Servant.Server (serve)
 import Servant.HTML.Blaze
 import Text.Blaze.Html
+import Text.Blaze.Html5 (h1, p)
 
 main :: IO ()
 main = do
@@ -38,4 +39,6 @@ instance ToJSON Document where
     object [ "name"   .= name, "author" .= author ]
 
 instance ToMarkup Document where
-  toMarkup (Document n _) = toHtml n
+  toMarkup (Document name author) = do
+    h1 $ toHtml name
+    p $ toHtml author
