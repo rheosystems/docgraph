@@ -6,16 +6,27 @@ import Data.Text (Text)
 import Network.Wai.Handler.Warp (run)
 import Servant
 import Servant.Server (serve)
-import Data.Monoid ((<>))
+import Servant.HTML.Blaze
+import Text.Blaze.Html
 
 main :: IO ()
-main = run 3000 $ serve (Proxy :: Proxy Api) getDocument
+main = do
+  putStrLn "Starting docgraph..."
+  run 3000 $ serve (Proxy :: Proxy Api) docgraph
 
-getDocument :: Server Api
+
+type Api = Get '[HTML] Document
+      :<|> "store" :> Post '[JSON] Text
+
+docgraph :: Server Api
+docgraph = getDocument :<|> storeDocument
+
+getDocument :: Handler Document
 getDocument =
   return $ Document "A note on Haskell" "Mikkel Christiansen"
 
-type Api = Get '[JSON] Document
+storeDocument :: Handler Text
+storeDocument = return "Document stored..."
 
 data Document = Document
   { documentName   :: Text
@@ -25,3 +36,6 @@ data Document = Document
 instance ToJSON Document where
   toJSON (Document name author) =
     object [ "name"   .= name, "author" .= author ]
+
+instance ToMarkup Document where
+  toMarkup (Document n _) = toHtml n
