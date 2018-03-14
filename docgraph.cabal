@@ -25,6 +25,7 @@ library
   build-depends:      aeson
                     , base >=4.7 && <5
                     , blaze-html
+                    , hasql
                     , http-api-data
                     , servant
                     , servant-blaze
@@ -34,6 +35,7 @@ library
   exposed-modules:
                     DocGraph
   other-modules:
+                    DocGraph.Database
                     DocGraph.Pages
   default-language: Haskell2010
 
