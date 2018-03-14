@@ -7,8 +7,9 @@ import Network.Wai.Handler.Warp (run)
 import Servant
 import Servant.Server (serve)
 import Servant.HTML.Blaze
-import Text.Blaze.Html
-import Text.Blaze.Html5 (h1, p)
+import DocGraph.Pages
+import Web.FormUrlEncoded(FromForm, fromForm, parseUnique)
+import Data.Monoid
 
 main :: IO ()
 main = do
@@ -16,29 +17,32 @@ main = do
   run 3000 $ serve (Proxy :: Proxy Api) docgraph
 
 
-type Api = Get '[HTML] Document
-      :<|> "store" :> Post '[JSON] Text
+type Api = Get '[HTML] SubmitPage
+      :<|> "store" 
+      :> ReqBody '[FormUrlEncoded] Person :> Post '[HTML] Text 
+
 
 docgraph :: Server Api
 docgraph = getDocument :<|> storeDocument
 
-getDocument :: Handler Document
+
+
+getDocument :: Handler SubmitPage
 getDocument =
-  return $ Document "A note on Haskell" "Mikkel Christiansen"
+  return $ SubmitPage
 
-storeDocument :: Handler Text
-storeDocument = return "Document stored..."
+storeDocument :: Person -> Handler Text
+storeDocument p = return $ "Done : " <> lastname p
 
-data Document = Document
-  { documentName   :: Text
-  , documentAuthor :: Text
+data Person = Person
+  { name   :: Text
+  , lastname :: Text
   }
 
-instance ToJSON Document where
-  toJSON (Document name author) =
-    object [ "name"   .= name, "author" .= author ]
+instance FromForm Person where
+  fromForm p = Person
+    <$> parseUnique "name" p
+    <*> parseUnique "lastname" p
 
-instance ToMarkup Document where
-  toMarkup (Document name author) = do
-    h1 $ toHtml name
-    p $ toHtml author
+  
+ 

@@ -28,12 +28,13 @@ library
                     , servant
                     , servant-blaze
                     , servant-server
+                    , http-api-data
                     , text
                     , warp
   exposed-modules:
                     DocGraph
   other-modules:
-                    Paths_docgraph
+                    DocGraph.Pages
   default-language: Haskell2010
 
 executable docgraph-exe
