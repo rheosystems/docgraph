@@ -8,7 +8,7 @@ import Network.Wai.Handler.Warp (run)
 import Servant
 import Servant.HTML.Blaze (HTML)
 import Servant.Server (serve)
-import Web.FormUrlEncoded
+import Web.FormUrlEncoded (FromForm, fromForm, parseUnique)
 
 main :: IO ()
 main = do
@@ -19,11 +19,13 @@ main = do
 type Api = Get '[HTML] SubmitPage
       :<|> "documents"
         :> ReqBody '[FormUrlEncoded] Document
-        :> Post '[JSON] Text
+        :> Post '[HTML] Text
+      :<|> "static" :> Raw
 
 docgraph :: Server Api
 docgraph = getSubmitPage
       :<|> storeDocument
+      :<|> serveDirectoryWebApp "static"
 
 storeDocument :: Document -> Handler Text
 storeDocument doc  =
