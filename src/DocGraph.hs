@@ -1,14 +1,14 @@
 {-# LANGUAGE TypeOperators, DataKinds #-}
 module DocGraph where
 
-import Data.Aeson
+import Data.Monoid ((<>))
 import Data.Text (Text)
+import DocGraph.Pages (SubmitPage(SubmitPage))
 import Network.Wai.Handler.Warp (run)
 import Servant
+import Servant.HTML.Blaze (HTML)
 import Servant.Server (serve)
-import Servant.HTML.Blaze
-import Text.Blaze.Html
-import Text.Blaze.Html5 (h1, p)
+import Web.FormUrlEncoded
 
 main :: IO ()
 main = do
@@ -16,29 +16,28 @@ main = do
   run 3000 $ serve (Proxy :: Proxy Api) docgraph
 
 
-type Api = Get '[HTML] Document
-      :<|> "store" :> Post '[JSON] Text
+type Api = Get '[HTML] SubmitPage
+      :<|> "documents"
+        :> ReqBody '[FormUrlEncoded] Document
+        :> Post '[JSON] Text
 
 docgraph :: Server Api
-docgraph = getDocument :<|> storeDocument
+docgraph = getSubmitPage
+      :<|> storeDocument
 
-getDocument :: Handler Document
-getDocument =
-  return $ Document "A note on Haskell" "Mikkel Christiansen"
-
-storeDocument :: Handler Text
-storeDocument = return "Document stored..."
+storeDocument :: Document -> Handler Text
+storeDocument doc  =
+  return $ "Received: " <> documentTitle doc
 
 data Document = Document
-  { documentName   :: Text
+  { documentTitle  :: Text
   , documentAuthor :: Text
   }
 
-instance ToJSON Document where
-  toJSON (Document name author) =
-    object [ "name"   .= name, "author" .= author ]
+instance FromForm Document where
+  fromForm f = Document
+    <$> parseUnique "title" f
+    <*> parseUnique "author"  f
 
-instance ToMarkup Document where
-  toMarkup (Document name author) = do
-    h1 $ toHtml name
-    p $ toHtml author
+getSubmitPage :: Handler SubmitPage
+getSubmitPage = return SubmitPage
