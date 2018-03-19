@@ -25,6 +25,8 @@ library
   build-depends:      aeson
                     , base >=4.7 && <5
                     , blaze-html
+                    , contravariant
+                    , data-default
                     , hasql
                     , http-api-data
                     , servant

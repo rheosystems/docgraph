@@ -12,3 +12,8 @@ instance ToMarkup SubmitPage where
       input ! A.type_ "text" ! A.name "title"
       input ! A.type_ "text" ! A.name "author"
       button "Submit" ! A.type_ "submit"
+
+data ListPage = ListPage
+
+instance ToMarkup ListPage where
+  toMarkup ListPage = H.h1 "List of Documents"
