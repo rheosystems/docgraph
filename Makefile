@@ -1,7 +1,7 @@
 -include envfile
 
 database:
-	docker run -d -p $(PGPORT):$(PGPORT) -e POSTGRES_USER=$(PGUSER) -e POSTGRES_PASSWORD=$(PGPASS) --name docgraph-postgres postgres:9.6
+	docker run -d -p $(PGPORT):$(PGPORT) -e POSTGRES_USER=$(PGUSER) -e POSTGRES_PASSWORD=$(PGPASS) --name docgraph-postgres postgres:10.3
 
 schema:
 	dropdb --if-exists docgraph
