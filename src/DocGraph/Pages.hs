@@ -1,7 +1,11 @@
 module DocGraph.Pages where
 
+import DocGraph.Database
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
+import Control.Monad (forM_)
+import Data.Monoid ((<>))
+
 
 data SubmitPage = SubmitPage
 
@@ -13,7 +17,15 @@ instance ToMarkup SubmitPage where
       input ! A.type_ "text" ! A.name "author"
       button "Submit" ! A.type_ "submit"
 
-data ListPage = ListPage
+data ListPage = ListPage (Maybe [Document])
 
 instance ToMarkup ListPage where
-  toMarkup ListPage = H.h1 "List of Documents"
+  toMarkup ( ListPage dd) = do
+   H.h1 "List of Documents"
+   case dd of
+     Nothing -> "nothing"
+     Just dd ->  renderDocs dd
+
+renderDocs :: [Document] -> Html
+renderDocs ds = H.ul $ forM_ ds $ \d ->
+  H.li . toHtml $ "Title: " <> documentTitle d <> ", Author:" <> documentAuthor d

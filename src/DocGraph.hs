@@ -8,7 +8,7 @@ import Network.Wai.Handler.Warp (run)
 import Servant
 import Servant.HTML.Blaze (HTML)
 import Servant.Server (serve)
-import DocGraph.Database (Document(..), insertDocument)
+import DocGraph.Database
 import Control.Monad.IO.Class (liftIO)
 import Data.String (fromString)
 
@@ -37,10 +37,12 @@ storeDocument doc  = do
   mres <- liftIO $ insertDocument doc
   return $ case mres of
     Nothing -> "Something went wrong with runDB"
-    Just i -> "Received: " <> fromString (show i)
+    Just i -> "Received: "
 
 getSubmitPage :: Handler SubmitPage
 getSubmitPage = return SubmitPage
 
 getListPage :: Handler ListPage
-getListPage = return ListPage
+getListPage = do
+  mdocs <- liftIO $ selectDocuments
+  return $ ListPage mdocs
