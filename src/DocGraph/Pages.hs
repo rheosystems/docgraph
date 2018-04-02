@@ -58,4 +58,4 @@ formGroup :: AttributeValue -> Html -> Html
 formGroup fid ftitle  =
   H.div ! A.class_ "form-group" $ do
     H.label ! for fid $ ftitle
-    input ! A.type_ "text" ! A.class_ "form-control" ! A.id fid
+    input ! A.type_ "text" ! A.class_ "form-control" ! A.id fid ! A.name fid
