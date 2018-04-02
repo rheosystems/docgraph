@@ -3,6 +3,7 @@ module DocGraph where
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import DocGraph.Project (ListProjectsPage, listProjects)
 import DocGraph.Pages (SubmitPage(SubmitPage), ListPage(ListPage))
 import Network.Wai.Handler.Warp (run)
 import Servant
@@ -24,12 +25,15 @@ type Api = Get '[HTML] SubmitPage
       :<|> "documents"
         :> ReqBody '[FormUrlEncoded] Document
         :> Post '[HTML] Text
+      :<|> "projects"
+        :> Get '[HTML] ListProjectsPage
       :<|> "static" :> Raw
 
 docgraph :: Server Api
 docgraph = getSubmitPage
       :<|> getListPage
       :<|> storeDocument
+      :<|> listProjects
       :<|> serveDirectoryWebApp "static"
 
 storeDocument :: Document -> Handler Text
