@@ -1,3 +1,4 @@
+
 module DocGraph.Pages where
 
 import DocGraph.Database
@@ -11,7 +12,7 @@ import Data.Text (Text)
 data SubmitPage = SubmitPage
 
 instance ToMarkup SubmitPage where
-  toMarkup SubmitPage = do
+  toMarkup SubmitPage =
     applyHead $ do
       H.h1 "Submit Document Info"
       H.form ! A.action "/documents" ! A.method "post" $ do
@@ -30,20 +31,7 @@ instance ToMarkup ListPage where
      H.h1 "List of Documents"
      case dd of
         Nothing -> "nothing"
-        Just dd -> renderDocs dd
-
-renderDocs :: [Document] -> Html
-renderDocs ds = do
-  H.ul $ forM_ ds $ \d -> do
-    H.li . toHtml $ "Title: " <> documentTitle d
-    H.li . toHtml $ "Author: " <> documentAuthor d
-    H.li . toHtml $ "Reference: " <> documentRef d
-    H.li . toHtml $ "Version: " <> documentVer d
-    H.li . toHtml $ "Key word : " <> documentKeyWords d
-    H.li . toHtml $ "URL: " <> case documentUrl d of
-      Nothing -> "No document url"
-      Just url -> url
-    br
+        Just dd -> mapM_ getdoc dd
 
 applyHead :: Html -> Html
 applyHead body = do
@@ -59,3 +47,23 @@ formGroup fid ftitle  =
   H.div ! A.class_ "form-group" $ do
     H.label ! for fid $ ftitle
     input ! A.type_ "text" ! A.class_ "form-control" ! A.id fid ! A.name fid
+
+getdoc :: Document -> Html
+getdoc d =
+  H.div ! A.class_ "card" ! A.style "width: 18rem" $ do
+    H.div ! A.class_ "card body" $
+     H.h5 ! A.class_ "doc title" $ "document info"
+    H.ul ! A.class_ "list-group list-group-flush" $ do
+      listGroupItem "Title: " $ documentTitle d
+      listGroupItem "Author: " $ documentAuthor d
+      listGroupItem "Reference: " $ documentRef d
+      listGroupItem "version: " $ documentVer d
+      listGroupItem "Key words: " $ documentKeyWords d
+      listGroupItem "URL" $
+        case (documentUrl d) of
+         Nothing -> "url unvailble"
+         Just url -> url
+
+listGroupItem ftitle fid =
+  H.li ! A.class_ "list-group-item" $ ftitle <> toHtml fid
+g
