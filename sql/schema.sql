@@ -10,7 +10,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE documents (
   document_id SERIAL PRIMARY KEY,
   title       TEXT   NOT NULL,
-  author      TEXT   NOT NULL
+  author      TEXT   NOT NULL,
+  reference   TEXT   NOT NULL,
+  version     TEXT   NOT NULL,
+  keywords    TEXT   NOT NULL,
+  url	      TEXT   NULL
 );
 
 -- Creating the `docgraph` user with the required permissions.
