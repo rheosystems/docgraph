@@ -66,4 +66,3 @@ getdoc d =
 
 listGroupItem ftitle fid =
   H.li ! A.class_ "list-group-item" $ ftitle <> toHtml fid
-g

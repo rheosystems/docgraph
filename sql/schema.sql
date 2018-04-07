@@ -17,6 +17,12 @@ CREATE TABLE documents (
   url	      TEXT   NULL
 );
 
+-- projects table
+CREATE TABLE projects (
+   reference  TEXT   PRIMARY KEY,
+   name       TEXT   NOT NULL
+);
+
 -- Creating the `docgraph` user with the required permissions.
 -- Must happen after all tables, views, etc. have been created.
 DROP ROLE IF EXISTS docgraph;
