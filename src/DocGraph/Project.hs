@@ -14,7 +14,8 @@ import qualified Hasql.Encoders as E
 import qualified Hasql.Decoders as D
 import Data.Monoid ((<>))
 import Data.Functor.Contravariant (contramap)
-
+import Control.Monad (join)
+import Data.Maybe (fromMaybe)
 
 data ListProjectsPage = ListProjectsPage (Maybe [Project])
 
@@ -50,8 +51,8 @@ instance ToMarkup CreateProjectForm where
   toMarkup (CreateProjectForm) = do
     H.h1 "Create Project"
     H.form ! A.action "/projects" ! A.method "post" $ do
-      formGroup "name"      "Name"
-      formGroup "reference" "Reference"
+      formGroup "name"      "Name"      Nothing
+      formGroup "reference" "Reference" Nothing
       H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"
 
 getProjectForm :: Handler CreateProjectForm
@@ -78,9 +79,42 @@ insertProject proj = runDB $ query proj q
     decoder :: D.Result ()
     decoder = D.unit
 
-formGroup :: AttributeValue -> Html -> Html
-formGroup fid ftitle  =
+formGroup :: AttributeValue -> Html -> Maybe Text -> Html
+formGroup fid ftitle mvalue =
   H.div ! A.class_ "form-group" $ do
     H.label ! for fid $ ftitle
-    input ! A.type_ "text" ! A.class_ "form-control" ! A.id fid ! A.name fid
+    input ! A.type_ "text" ! A.class_ "form-control"
+          ! A.id fid ! A.name fid ! A.value (maybe "" toValue mvalue)
 
+data UpdateProjectForm = UpdateProjectForm (Maybe Project)
+
+updateProjectForm :: Text -> Handler UpdateProjectForm
+updateProjectForm ref = do
+   mp <- liftIO $ selectProject ref
+   return $ UpdateProjectForm mp
+
+selectProject :: Text -> IO (Maybe Project)
+selectProject reff = do
+  mmp <- runDB $ query reff q
+  return $ join mmp
+  where
+    q :: Query Text (Maybe Project)
+    q = statement sql encoder decoder True
+
+    sql = "select reference, name from projects where reference = $1"
+
+    encoder :: E.Params Text
+    encoder = E.value E.text
+
+    decoder :: D.Result (Maybe Project)
+    decoder = D.maybeRow (Project <$> D.value D.text
+                                   <*> D.value D.text)
+
+instance ToMarkup UpdateProjectForm where
+  toMarkup (UpdateProjectForm Nothing) = H.h1 "Project not found"
+  toMarkup (UpdateProjectForm (Just p)) = do
+    H.h1 "Update Project"
+    H.form ! A.action ("/projects/" <> toValue (projectRef p)) ! A.method "post" $ do
+      formGroup "name"      "Name"      (Just $ projectName p)
+      formGroup "reference" "Reference" (Just $ projectRef p)
+      H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"
