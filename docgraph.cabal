@@ -38,8 +38,9 @@ library
                     DocGraph
   other-modules:
                     DocGraph.Database
-                    DocGraph.Pages
                     DocGraph.Project
+                    DocGraph.Bootstrap
+                    DocGraph.Document
   default-language: Haskell2010
 
 executable docgraph-exe
