@@ -64,7 +64,7 @@ storeProject pro = do
   liftIO $ insertProject pro
   return "received"
 
-insertProject :: Project -> IO (Maybe ())
+insertProject :: Project -> IO ()
 insertProject proj = runDB $ query proj q
   where
     q :: Query Project ()
@@ -94,9 +94,7 @@ updateProjectForm ref = do
    return $ UpdateProjectForm mp
 
 selectProject :: Text -> IO (Maybe Project)
-selectProject reff = do
-  mmp <- runDB $ query reff q
-  return $ join mmp
+selectProject reff = runDB $ query reff q
   where
     q :: Query Text (Maybe Project)
     q = statement sql encoder decoder True

@@ -81,14 +81,12 @@ instance ToMarkup DocumentForm where
 getListPage :: Handler ListPage
 getListPage = ListPage <$> liftIO selectDocuments
 
-newtype ListPage = ListPage (Maybe [Document])
+newtype ListPage = ListPage [Document]
 
 instance ToMarkup ListPage where
   toMarkup ( ListPage dd) = applyHead $ do
      H.h1 "List of Documents"
-     case dd of
-        Nothing -> "nothing"
-        Just dd -> mapM_ getdoc dd
+     mapM_ getdoc dd
 
 getdoc :: Document -> Html
 getdoc d =
@@ -105,12 +103,10 @@ getdoc d =
 
 storeDocument :: Document -> Handler Text
 storeDocument doc  = do
-  mres <- liftIO $ insertDocument doc
-  return $ case mres of
-    Nothing -> "Something went wrong with runDB"
-    Just i -> "Received: "
+  liftIO $ insertDocument doc
+  return "Document Received"
 
-insertDocument :: Document -> IO (Maybe Int64)
+insertDocument :: Document -> IO Int64
 insertDocument doc = runDB $ query doc q
   where
     q :: Query Document Int64
@@ -118,7 +114,7 @@ insertDocument doc = runDB $ query doc q
 
     sql = "insert into documents(title, author, reference, version, keywords, url ) values ($1, $2, $3, $4, $5, $6) returning document_id"
 
-selectDocuments :: IO (Maybe [Document])
+selectDocuments :: IO [Document]
 selectDocuments = runDB $ query () q
   where
     q :: Query () [Document]
@@ -132,9 +128,7 @@ getUpdateDocumentForm ref = do
   return $ DocumentForm mres
 
 selectDocument :: Text -> IO (Maybe Document)
-selectDocument ref = do
-  mmd <- runDB $ query ref q
-  return $ join mmd
+selectDocument ref = runDB $ query ref q
   where
     q :: Query Text (Maybe Document)
     q = statement sql (E.value E.text) def True
@@ -146,7 +140,7 @@ updateDocument ref doc = do
   _ <- liftIO $ replaceDocument ref doc
   return "update doc received"
 
-replaceDocument :: Text -> Document -> IO (Maybe Int64)
+replaceDocument :: Text -> Document -> IO Int64
 replaceDocument ref doc = runDB $ query doc q
   where
     q :: Query Document Int64
