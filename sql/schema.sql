@@ -11,7 +11,7 @@ CREATE TABLE documents (
   document_id SERIAL PRIMARY KEY,
   title       TEXT   NOT NULL,
   author      TEXT   NOT NULL,
-  reference   TEXT   NOT NULL,
+  reference   TEXT   UNIQUE NOT NULL,
   version     TEXT   NOT NULL,
   keywords    TEXT   NOT NULL,
   url	      TEXT   NULL

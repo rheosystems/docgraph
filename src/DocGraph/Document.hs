@@ -50,7 +50,7 @@ instance Default (D.Row Document) where
 instance Default (E.Params Document) where
   def = mconcat
       [ contramap documentTitle    (E.value E.text)
-      ,  contramap documentAuthor  (E.value E.text)
+      , contramap documentAuthor   (E.value E.text)
       , contramap documentRef      (E.value E.text)
       , contramap documentVer      (E.value E.text)
       , contramap documentKeyWords (E.value E.text)
@@ -66,7 +66,10 @@ instance ToMarkup DocumentForm where
   toMarkup (DocumentForm mdoc) =
     applyHead $ do
       H.h1 "Submit Document Info"
-      H.form ! A.action "/documents" ! A.method "post" $ do
+      let route = case mdoc of
+                    Nothing -> "/documents"
+                    Just doc -> textValue $ "/document/" <> documentRef doc
+      H.form ! A.action route ! A.method "post" $ do
         formGroup "title" "Title"         (documentTitle <$> mdoc)
         formGroup "author" "Author"       (documentAuthor <$> mdoc)
         formGroup "reference" "Reference" (documentRef <$> mdoc)
@@ -98,7 +101,7 @@ getdoc d =
       listGroupItem "Reference: " $ documentRef d
       listGroupItem "version: "   $ documentVer d
       listGroupItem "Key words: " $ documentKeyWords d
-      listGroupItem "URL"         $ fromMaybe "url unavailable" (documentUrl d)
+      listGroupItem "URL: "         $ fromMaybe "url unavailable" (documentUrl d)
 
 storeDocument :: Document -> Handler Text
 storeDocument doc  = do
@@ -137,3 +140,16 @@ selectDocument ref = do
     q = statement sql (E.value E.text) def True
 
     sql = "select title, author, reference, version, keywords, url from documents where reference = $1"
+
+updateDocument :: Text -> Document -> Handler Text
+updateDocument ref doc = do
+  _ <- liftIO $ replaceDocument ref doc
+  return "update doc received"
+
+replaceDocument :: Text -> Document -> IO (Maybe Int64)
+replaceDocument ref doc = runDB $ query doc q
+  where
+    q :: Query Document Int64
+    q = statement sql def def True
+
+    sql = "update documents set title = $1, author = $2, version = $4, keywords = $5, url = $6 where reference = $3"

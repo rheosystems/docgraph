@@ -25,6 +25,10 @@ type Api = Get '[HTML] DocumentForm
       :<|> "document"
         :> Capture "reference" Text
         :> Get '[HTML] DocumentForm
+      :<|> "document"
+        :> Capture "reference" Text
+        :> ReqBody '[FormUrlEncoded] Document
+        :> Post '[HTML] Text
       :<|> "projects"
         :> Get '[HTML] ListProjectsPage
       :<|> "projects"
@@ -47,6 +51,7 @@ docgraph = getDocumentForm
       :<|> getListPage
       :<|> storeDocument
       :<|> getUpdateDocumentForm
+      :<|> updateDocument
       :<|> listProjects
       :<|> getProjectForm
       :<|> storeProject
