@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators, DataKinds #-}
 module DocGraph.Document where
 
@@ -7,7 +8,7 @@ import Servant
 import Control.Monad.IO.Class (liftIO)
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
-import Control.Monad (forM_)
+import Control.Monad (forM_, join)
 import Web.FormUrlEncoded (FromForm, fromForm, parseUnique, parseMaybe)
 import DocGraph.Bootstrap (formGroup, listGroupItem, applyHead)
 import DocGraph.Database (runDB)
@@ -18,6 +19,7 @@ import qualified Hasql.Decoders as D
 import Data.Functor.Contravariant (contramap)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
+import Data.Default
 
 data Document = Document
   { documentTitle     :: Text
@@ -37,22 +39,40 @@ instance FromForm Document where
     <*> parseUnique "keywords"  f
     <*> parseMaybe  "url"       f
 
-getSubmitPage :: Handler SubmitPage
-getSubmitPage = return SubmitPage
+instance Default (D.Row Document) where
+  def = Document <$> D.value D.text
+                 <*> D.value D.text
+                 <*> D.value D.text
+                 <*> D.value D.text
+                 <*> D.value D.text
+                 <*> D.nullableValue D.text
 
-data SubmitPage = SubmitPage
+instance Default (E.Params Document) where
+  def = mconcat
+      [ contramap documentTitle    (E.value E.text)
+      ,  contramap documentAuthor  (E.value E.text)
+      , contramap documentRef      (E.value E.text)
+      , contramap documentVer      (E.value E.text)
+      , contramap documentKeyWords (E.value E.text)
+      , contramap documentUrl      (E.nullableValue E.text)
+      ]
 
-instance ToMarkup SubmitPage where
-  toMarkup SubmitPage =
+getDocumentForm :: Handler DocumentForm
+getDocumentForm = return $ DocumentForm Nothing
+
+newtype DocumentForm = DocumentForm (Maybe Document)
+
+instance ToMarkup DocumentForm where
+  toMarkup (DocumentForm mdoc) =
     applyHead $ do
       H.h1 "Submit Document Info"
       H.form ! A.action "/documents" ! A.method "post" $ do
-        formGroup "title" "Title"
-        formGroup "author" "Author"
-        formGroup "reference" "Reference"
-        formGroup "version" "Version"
-        formGroup "keywords" "Key words"
-        formGroup "url" "URL"
+        formGroup "title" "Title"         (documentTitle <$> mdoc)
+        formGroup "author" "Author"       (documentAuthor <$> mdoc)
+        formGroup "reference" "Reference" (documentRef <$> mdoc)
+        formGroup "version" "Version"     (documentVer <$> mdoc)
+        formGroup "keywords" "Key words"  (documentKeyWords <$> mdoc)
+        formGroup "url" "URL"             (join $ documentUrl <$> mdoc)
         H.button ! A.type_ "submit" ! A.class_ "btn btn-primary" $ "Submit"
 
 getListPage :: Handler ListPage
@@ -73,12 +93,12 @@ getdoc d =
     H.div ! A.class_ "card body" $
      H.h5 ! A.class_ "doc title" $ "document info"
     H.ul ! A.class_ "list-group list-group-flush" $ do
-      listGroupItem "Title: " $ documentTitle d
-      listGroupItem "Author: " $ documentAuthor d
+      listGroupItem "Title: "     $ documentTitle d
+      listGroupItem "Author: "    $ documentAuthor d
       listGroupItem "Reference: " $ documentRef d
-      listGroupItem "version: " $ documentVer d
+      listGroupItem "version: "   $ documentVer d
       listGroupItem "Key words: " $ documentKeyWords d
-      listGroupItem "URL" $ fromMaybe "url unavailable" (documentUrl d)
+      listGroupItem "URL"         $ fromMaybe "url unavailable" (documentUrl d)
 
 storeDocument :: Document -> Handler Text
 storeDocument doc  = do
@@ -86,42 +106,34 @@ storeDocument doc  = do
   return $ case mres of
     Nothing -> "Something went wrong with runDB"
     Just i -> "Received: "
-    
+
 insertDocument :: Document -> IO (Maybe Int64)
 insertDocument doc = runDB $ query doc q
   where
     q :: Query Document Int64
-    q = statement sql encoder decoder True
+    q = statement sql def (D.singleRow $ D.value D.int8) True
 
     sql = "insert into documents(title, author, reference, version, keywords, url ) values ($1, $2, $3, $4, $5, $6) returning document_id"
-
-    encoder :: E.Params Document
-    encoder = contramap documentTitle    (E.value E.text) <>
-              contramap documentAuthor   (E.value E.text) <>
-              contramap documentRef      (E.value E.text) <>
-              contramap documentVer      (E.value E.text) <>
-              contramap documentKeyWords (E.value E.text) <>
-              contramap documentUrl      (E.nullableValue E.text)
-
-    decoder :: D.Result Int64
-    decoder = D.singleRow (D.value D.int8)
-
 
 selectDocuments :: IO (Maybe [Document])
 selectDocuments = runDB $ query () q
   where
     q :: Query () [Document]
-    q = statement sql encoder decoder True
+    q = statement sql def def True
 
     sql = "select title, author, reference, version, keywords, url from documents"
 
-    encoder :: E.Params ()
-    encoder = E.unit
+getUpdateDocumentForm :: Text -> Handler DocumentForm
+getUpdateDocumentForm ref = do
+  mres <- liftIO $ selectDocument ref
+  return $ DocumentForm mres
 
-    decoder :: D.Result [Document]
-    decoder = D.rowsList $ Document <$> D.value D.text
-                                    <*> D.value D.text
-                                    <*> D.value D.text
-                                    <*> D.value D.text
-                                    <*> D.value D.text
-                                    <*> D.nullableValue D.text
+selectDocument :: Text -> IO (Maybe Document)
+selectDocument ref = do
+  mmd <- runDB $ query ref q
+  return $ join mmd
+  where
+    q :: Query Text (Maybe Document)
+    q = statement sql (E.value E.text) def True
+
+    sql = "select title, author, reference, version, keywords, url from documents where reference = $1"

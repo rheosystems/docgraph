@@ -16,12 +16,15 @@ main = do
   run 3000 $ serve (Proxy :: Proxy Api) docgraph
 
 
-type Api = Get '[HTML] SubmitPage
+type Api = Get '[HTML] DocumentForm
       :<|> "documents"
         :> Get '[HTML] ListPage
       :<|> "documents"
         :> ReqBody '[FormUrlEncoded] Document
         :> Post '[HTML] Text
+      :<|> "document"
+        :> Capture "reference" Text
+        :> Get '[HTML] DocumentForm
       :<|> "projects"
         :> Get '[HTML] ListProjectsPage
       :<|> "projects"
@@ -40,9 +43,10 @@ type Api = Get '[HTML] SubmitPage
       :<|> "static" :> Raw
 
 docgraph :: Server Api
-docgraph = getSubmitPage
+docgraph = getDocumentForm
       :<|> getListPage
       :<|> storeDocument
+      :<|> getUpdateDocumentForm
       :<|> listProjects
       :<|> getProjectForm
       :<|> storeProject
