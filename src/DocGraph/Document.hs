@@ -138,7 +138,7 @@ selectDocument ref = runDB $ query ref q
 updateDocument :: Text -> Document -> Handler Text
 updateDocument ref doc = do
   _ <- liftIO $ replaceDocument ref doc
-  return "update doc received"
+  return "updated document received"
 
 replaceDocument :: Text -> Document -> IO Int64
 replaceDocument ref doc = runDB $ query doc q
@@ -147,3 +147,30 @@ replaceDocument ref doc = runDB $ query doc q
     q = statement sql def def True
 
     sql = "update documents set title = $1, author = $2, version = $4, keywords = $5, url = $6 where reference = $3"
+
+deleteDocument :: Text -> Handler Text
+deleteDocument ref = do
+  _ <- liftIO $ eraseDocument ref
+  return "Document deleted"
+
+eraseDocument :: Text -> IO Int64
+eraseDocument ref = runDB $ query ref q
+ where
+    q :: Query Text Int64
+    q = statement sql (E.value E.text) def True
+
+    sql = "delete from documents where reference = $1"
+
+getDeleteDocumentForm :: Text -> Handler DeleteDocumentForm
+getDeleteDocumentForm ref = do
+   mres <- liftIO $ selectDocument ref
+   return $ DeleteDocumentForm mres
+
+newtype DeleteDocumentForm = DeleteDocumentForm (Maybe Document)
+
+instance ToMarkup DeleteDocumentForm where
+  toMarkup (DeleteDocumentForm Nothing) = H.h1 "No document"
+  toMarkup (DeleteDocumentForm (Just mdoc)) =
+    applyHead $ do
+      H.h1 "Delete Document"
+      H.form ! A.action ("/document/" <> toValue (documentRef mdoc) <> "/delete") ! A.method "post" $ H.button ! A.type_ "submit" ! A.class_ "btn btn-primary" $ "Delete"
