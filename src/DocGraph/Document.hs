@@ -90,16 +90,18 @@ instance ToMarkup ListPage where
 
 getdoc :: Document -> Html
 getdoc d =
-  H.div ! A.class_ "card" ! A.style "width: 18rem" $ do
-    H.div ! A.class_ "card body" $
-     H.h5 ! A.class_ "doc title" $ "document info"
-    H.ul ! A.class_ "list-group list-group-flush" $ do
-      listGroupItem "Title: "     $ documentTitle d
-      listGroupItem "Author: "    $ documentAuthor d
-      listGroupItem "Reference: " $ documentRef d
-      listGroupItem "version: "   $ documentVer d
-      listGroupItem "Key words: " $ documentKeyWords d
-      listGroupItem "URL: "         $ fromMaybe "url unavailable" (documentUrl d)
+ H.div !g A.id "accordion" $
+    H.div ! A.class_ "card" ! A.style "width: 18rem" $ do
+      H.div ! A.id "headingOne" $ do
+        H.h5 ! A.class_ "card-title" $ toHtml $ documentTitle d
+        H.button ! A.class_ "btn btin-link" ! H.dataAttribute "toggle" "collapse" ! H.dataAttribute "target" ("#"<> textValue (documentRef d)) $ "My button"
+      H.div ! A.id (textValue (documentRef d)) ! A.class_ "collapse show" ! H.dataAttribute "parent" "#accordion" $ do
+           H.div ! A.class_ "card-body" $ do
+             H.ul ! A.class_ "list-group list-group-flush" $ do
+                listGroupItem "Author: "    $ documentAuthor d
+                listGroupItem "version: "   $ documentVer d
+                listGroupItem "Key words: " $ documentKeyWords d
+                listGroupItem "URL: "       $ fromMaybe "url unavailable" (documentUrl d)
 
 storeDocument :: Document -> Handler Text
 storeDocument doc  = do
