@@ -1,6 +1,5 @@
 module DocGraph.Project where
 
-import Control.Monad (forM_)
 import Data.Text (Text)
 import Servant
 import DocGraph.Database (runDB)
@@ -14,10 +13,10 @@ import qualified Hasql.Encoders as E
 import qualified Hasql.Decoders as D
 import Data.Monoid ((<>))
 import Data.Functor.Contravariant (contramap)
-import Control.Monad (join)
+import Control.Monad (join, forM_)
 import Data.Maybe (fromMaybe)
 
-data ListProjectsPage = ListProjectsPage (Maybe [Project])
+newtype ListProjectsPage = ListProjectsPage (Maybe [Project])
 
 instance ToMarkup ListProjectsPage where
   toMarkup (ListProjectsPage mps) = do
@@ -48,7 +47,7 @@ listProjects =
 data CreateProjectForm = CreateProjectForm
 
 instance ToMarkup CreateProjectForm where
-  toMarkup (CreateProjectForm) = do
+  toMarkup CreateProjectForm = do
     H.h1 "Create Project"
     H.form ! A.action "/projects" ! A.method "post" $ do
       formGroup "name"      "Name"      Nothing
@@ -86,7 +85,7 @@ formGroup fid ftitle mvalue =
     input ! A.type_ "text" ! A.class_ "form-control"
           ! A.id fid ! A.name fid ! A.value (maybe "" toValue mvalue)
 
-data UpdateProjectForm = UpdateProjectForm (Maybe Project)
+newtype UpdateProjectForm = UpdateProjectForm (Maybe Project)
 
 updateProjectForm :: Text -> Handler UpdateProjectForm
 updateProjectForm ref = do
