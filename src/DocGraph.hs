@@ -3,17 +3,19 @@ module DocGraph where
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import DocGraph.Document
 import DocGraph.Project (ListProjectsPage, UpdateProjectForm, CreateProjectForm(..), getProjectForm, listProjects, storeProject,updateProjectForm, Project)
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Servant
 import Servant.HTML.Blaze (HTML)
 import Servant.Server (serve)
-import DocGraph.Document
+
 
 main :: IO ()
 main = do
   putStrLn "Starting docgraph..."
-  run 3000 $ serve (Proxy :: Proxy Api) docgraph
+  run 3000 $ logStdoutDev $ serve (Proxy :: Proxy Api) docgraph
 
 
 type Api = Get '[HTML] DocumentForm

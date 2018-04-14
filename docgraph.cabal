@@ -33,6 +33,7 @@ library
                     , servant-blaze
                     , servant-server
                     , text
+                    , wai-extra
                     , warp
   exposed-modules:
                     DocGraph
