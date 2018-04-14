@@ -1,3 +1,4 @@
+
 {-# LANGUAGE TypeOperators, DataKinds #-}
 module DocGraph where
 
@@ -31,6 +32,14 @@ type Api = Get '[HTML] DocumentForm
         :> Capture "reference" Text
         :> ReqBody '[FormUrlEncoded] Document
         :> Post '[HTML] Text
+      :<|> "document"
+        :> Capture "reference" Text
+        :> "delete"
+        :> Post '[HTML] Text
+      :<|> "document"
+        :> Capture "reference" Text
+        :> "delete"
+        :> Get '[HTML] DeleteDocumentForm
       :<|> "projects"
         :> Get '[HTML] ListProjectsPage
       :<|> "projects"
@@ -54,6 +63,8 @@ docgraph = getDocumentForm
       :<|> storeDocument
       :<|> getUpdateDocumentForm
       :<|> updateDocument
+      :<|> deleteDocument
+      :<|> getDeleteDocumentForm
       :<|> listProjects
       :<|> getProjectForm
       :<|> storeProject
