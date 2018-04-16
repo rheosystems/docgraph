@@ -36,12 +36,10 @@ data Project = Project
 instance FromForm Project where
   fromForm f = Project
     <$> parseUnique "reference"      f
-    <*> parseUnique "name" f
+    <*> parseUnique "name"           f
 
 listProjects :: Handler ListProjectsPage
-listProjects = do
-  ps <- liftIO selectProjects
-  return $ ListProjectsPage ps
+listProjects = ListProjectsPage <$> liftIO selectProjects
 
 selectProjects :: IO [Project]
 selectProjects = runDB $ query () q
@@ -54,8 +52,6 @@ selectProjects = runDB $ query () q
     decoder :: D.Result [Project]
     decoder = D.rowsList $ Project <$> D.value D.text <*> D.value D.text
 
-
-
 data CreateProjectForm = CreateProjectForm
 
 instance ToMarkup CreateProjectForm where
@@ -65,6 +61,7 @@ instance ToMarkup CreateProjectForm where
       formGroup "name"      "Name"      Nothing
       formGroup "reference" "Reference" Nothing
       H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"
+      H.a ! A.href "/projects" $ "List Projects"
 
 getProjectForm :: Handler CreateProjectForm
 getProjectForm =
@@ -122,8 +119,31 @@ selectProject reff = runDB $ query reff q
 instance ToMarkup UpdateProjectForm where
   toMarkup (UpdateProjectForm Nothing) = H.h1 "Project not found"
   toMarkup (UpdateProjectForm (Just p)) = do
+    let ref = projectRef p
     H.h1 "Update Project"
-    H.form ! A.action ("/projects/" <> toValue (projectRef p)) ! A.method "post" $ do
+    H.form ! A.action ("/projects/" <> toValue ref) ! A.method "post" $ do
       formGroup "name"      "Name"      (Just $ projectName p)
-      formGroup "reference" "Reference" (Just $ projectRef p)
+      formGroup "reference" "Reference" (Just ref)
       H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"
+      H.a ! A.href "/projects" $ "List Projects"
+    H.form ! A.action ("/project/" <> toValue ref <> "/delete") ! A.method "post" $
+      H.button ! A.type_ "Submit" $ "Delete Project"
+
+deleteProject :: Text -> Handler Text
+deleteProject ref = do
+  liftIO $ eraseProject ref
+  return "Project Deleted."
+
+eraseProject :: Text -> IO ()
+eraseProject ref = runDB $ query ref q
+  where
+  q :: Query Text ()
+  q = statement sql encoder decoder True
+
+  sql = "delete from projects where reference = $1"
+
+  decoder :: D.Result ()
+  decoder = D.unit
+
+  encoder :: E.Params Text
+  encoder = E.value E.text

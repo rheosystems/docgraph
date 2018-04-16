@@ -5,7 +5,7 @@ module DocGraph where
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import DocGraph.Document
-import DocGraph.Project (ListProjectsPage, UpdateProjectForm, CreateProjectForm(..), getProjectForm, listProjects, storeProject,updateProjectForm, Project)
+import DocGraph.Project
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Servant
@@ -55,6 +55,10 @@ type Api = Get '[HTML] DocumentForm
         :> Capture "reference" Text
         :> ReqBody '[FormUrlEncoded] Project
         :> Post '[HTML] Text
+      :<|> "project"
+        :> Capture "reference" Text
+        :> "delete"
+        :> Post '[HTML] Text
       :<|> "static" :> Raw
 
 docgraph :: Server Api
@@ -70,4 +74,5 @@ docgraph = getDocumentForm
       :<|> storeProject
       :<|> updateProjectForm
       :<|> undefined
+      :<|> deleteProject
       :<|> serveDirectoryWebApp "static"
