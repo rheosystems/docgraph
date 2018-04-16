@@ -97,9 +97,21 @@ formGroup fid ftitle mvalue =
 newtype UpdateProjectForm = UpdateProjectForm (Maybe Project)
 
 updateProjectForm :: Text -> Handler UpdateProjectForm
-updateProjectForm ref = do
-   mp <- liftIO $ selectProject ref
-   return $ UpdateProjectForm mp
+updateProjectForm ref = UpdateProjectForm <$> liftIO (selectProject ref)
+
+updateProject :: Text -> Project -> Handler Text
+updateProject ref p = do
+  liftIO $ runDB $ query (ref, projectName p) q
+  return "project updated"
+  where
+    q :: Query (Text, Text) ()
+    q = statement sql encoder D.unit True
+
+    sql = "update projects set name = $2 where reference = $1"
+
+    encoder :: E.Params (Text, Text)
+    encoder = contramap fst (E.value E.text) <>
+              contramap snd (E.value E.text)
 
 selectProject :: Text -> IO (Maybe Project)
 selectProject reff = runDB $ query reff q
@@ -121,7 +133,7 @@ instance ToMarkup UpdateProjectForm where
   toMarkup (UpdateProjectForm (Just p)) = do
     let ref = projectRef p
     H.h1 "Update Project"
-    H.form ! A.action ("/projects/" <> toValue ref) ! A.method "post" $ do
+    H.form ! A.action ("/project/" <> toValue ref) ! A.method "post" $ do
       formGroup "name"      "Name"      (Just $ projectName p)
       formGroup "reference" "Reference" (Just ref)
       H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"

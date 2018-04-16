@@ -73,6 +73,6 @@ docgraph = getDocumentForm
       :<|> getProjectForm
       :<|> storeProject
       :<|> updateProjectForm
-      :<|> undefined
+      :<|> updateProject
       :<|> deleteProject
       :<|> serveDirectoryWebApp "static"
