@@ -48,10 +48,10 @@ type Api = Get '[HTML] DocumentForm
       :<|> "projects"
         :> ReqBody '[FormUrlEncoded] Project
         :> Post '[HTML] Text
-      :<|> "projects"
+      :<|> "project"
         :> Capture "reference" Text
         :> Get '[HTML] UpdateProjectForm
-      :<|> "projects"
+      :<|> "project"
         :> Capture "reference" Text
         :> ReqBody '[FormUrlEncoded] Project
         :> Post '[HTML] Text

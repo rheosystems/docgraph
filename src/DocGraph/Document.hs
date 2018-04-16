@@ -90,7 +90,7 @@ instance ToMarkup ListPage where
 
 getdoc :: Document -> Html
 getdoc d =
- H.div !g A.id "accordion" $
+ H.div ! A.id "accordion" $
     H.div ! A.class_ "card" ! A.style "width: 18rem" $ do
       H.div ! A.id "headingOne" $ do
         H.h5 ! A.class_ "card-title" $ toHtml $ documentTitle d

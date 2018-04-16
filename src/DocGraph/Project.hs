@@ -16,17 +16,17 @@ import Data.Functor.Contravariant (contramap)
 import Control.Monad (join, forM_)
 import Data.Maybe (fromMaybe)
 
-newtype ListProjectsPage = ListProjectsPage (Maybe [Project])
+newtype ListProjectsPage = ListProjectsPage [Project]
 
 instance ToMarkup ListProjectsPage where
-  toMarkup (ListProjectsPage mps) = do
+  toMarkup (ListProjectsPage ps) = do
     H.h1 "List of Projects"
-    case mps of
-      Nothing -> "nothing"
-      Just ps -> H.ul $ mapM_ renderProject ps
+    H.a ! A.href "/projects/new" $ "create project"
+    H.ul $ mapM_ renderProject ps
 
 renderProject :: Project -> Html
-renderProject p = H.li $ toHtml $ projectRef p
+renderProject p = let ref = projectRef p in
+  H.li $ H.a ! A.href (textValue $ "/project/" <> ref) $ toHtml ref
 
 data Project = Project
   { projectRef  :: Text
@@ -39,10 +39,22 @@ instance FromForm Project where
     <*> parseUnique "name" f
 
 listProjects :: Handler ListProjectsPage
-listProjects =
-  return $ ListProjectsPage (Just [ Project "ref" "name"
-                                  , Project "ref2" "name2"
-                                  ])
+listProjects = do
+  ps <- liftIO selectProjects
+  return $ ListProjectsPage ps
+
+selectProjects :: IO [Project]
+selectProjects = runDB $ query () q
+  where
+    q :: Query () [Project]
+    q = statement sql E.unit decoder True
+
+    sql = "select reference, name from projects"
+
+    decoder :: D.Result [Project]
+    decoder = D.rowsList $ Project <$> D.value D.text <*> D.value D.text
+
+
 
 data CreateProjectForm = CreateProjectForm
 
