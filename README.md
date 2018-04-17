@@ -66,3 +66,23 @@ Document >-< Document
 - Location
 - Key words
 - Dependencies
+
+## User
+
+A user has an email address as a natural key (Use as primary
+key). Additionally full name.
+
+A user can be part of many projects and a project has many
+users. Therefore need a many-to-many table. See code below and note
+that we are using a composite primary key.
+
+```
+Table: project_users
+  user_email references users(email),
+  project_reference references projects(reference),
+  PrimaryKey (user_email, project_reference)
+
+```
+
+A user profile should show which projects the user is a member of.
+A project profile should show the users that are members of the project.
