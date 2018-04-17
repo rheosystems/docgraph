@@ -1,6 +1,5 @@
 module DocGraph.Project where
 
-import Control.Monad (forM_)
 import Data.Text (Text)
 import Servant
 import DocGraph.Database (runDB)
@@ -14,20 +13,20 @@ import qualified Hasql.Encoders as E
 import qualified Hasql.Decoders as D
 import Data.Monoid ((<>))
 import Data.Functor.Contravariant (contramap)
-import Control.Monad (join)
+import Control.Monad (join, forM_)
 import Data.Maybe (fromMaybe)
 
-data ListProjectsPage = ListProjectsPage (Maybe [Project])
+newtype ListProjectsPage = ListProjectsPage [Project]
 
 instance ToMarkup ListProjectsPage where
-  toMarkup (ListProjectsPage mps) = do
+  toMarkup (ListProjectsPage ps) = do
     H.h1 "List of Projects"
-    case mps of
-      Nothing -> "nothing"
-      Just ps -> H.ul $ mapM_ renderProject ps
+    H.a ! A.href "/projects/new" $ "create project"
+    H.ul $ mapM_ renderProject ps
 
 renderProject :: Project -> Html
-renderProject p = H.li $ toHtml $ projectRef p
+renderProject p = let ref = projectRef p in
+  H.li $ H.a ! A.href (textValue $ "/project/" <> ref) $ toHtml ref
 
 data Project = Project
   { projectRef  :: Text
@@ -37,23 +36,32 @@ data Project = Project
 instance FromForm Project where
   fromForm f = Project
     <$> parseUnique "reference"      f
-    <*> parseUnique "name" f
+    <*> parseUnique "name"           f
 
 listProjects :: Handler ListProjectsPage
-listProjects =
-  return $ ListProjectsPage (Just [ Project "ref" "name"
-                                  , Project "ref2" "name2"
-                                  ])
+listProjects = ListProjectsPage <$> liftIO selectProjects
+
+selectProjects :: IO [Project]
+selectProjects = runDB $ query () q
+  where
+    q :: Query () [Project]
+    q = statement sql E.unit decoder True
+
+    sql = "select reference, name from projects"
+
+    decoder :: D.Result [Project]
+    decoder = D.rowsList $ Project <$> D.value D.text <*> D.value D.text
 
 data CreateProjectForm = CreateProjectForm
 
 instance ToMarkup CreateProjectForm where
-  toMarkup (CreateProjectForm) = do
+  toMarkup CreateProjectForm = do
     H.h1 "Create Project"
     H.form ! A.action "/projects" ! A.method "post" $ do
       formGroup "name"      "Name"      Nothing
       formGroup "reference" "Reference" Nothing
       H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"
+      H.a ! A.href "/projects" $ "List Projects"
 
 getProjectForm :: Handler CreateProjectForm
 getProjectForm =
@@ -86,12 +94,24 @@ formGroup fid ftitle mvalue =
     input ! A.type_ "text" ! A.class_ "form-control"
           ! A.id fid ! A.name fid ! A.value (maybe "" toValue mvalue)
 
-data UpdateProjectForm = UpdateProjectForm (Maybe Project)
+newtype UpdateProjectForm = UpdateProjectForm (Maybe Project)
 
 updateProjectForm :: Text -> Handler UpdateProjectForm
-updateProjectForm ref = do
-   mp <- liftIO $ selectProject ref
-   return $ UpdateProjectForm mp
+updateProjectForm ref = UpdateProjectForm <$> liftIO (selectProject ref)
+
+updateProject :: Text -> Project -> Handler Text
+updateProject ref p = do
+  liftIO $ runDB $ query (ref, projectName p) q
+  return "project updated"
+  where
+    q :: Query (Text, Text) ()
+    q = statement sql encoder D.unit True
+
+    sql = "update projects set name = $2 where reference = $1"
+
+    encoder :: E.Params (Text, Text)
+    encoder = contramap fst (E.value E.text) <>
+              contramap snd (E.value E.text)
 
 selectProject :: Text -> IO (Maybe Project)
 selectProject reff = runDB $ query reff q
@@ -111,8 +131,31 @@ selectProject reff = runDB $ query reff q
 instance ToMarkup UpdateProjectForm where
   toMarkup (UpdateProjectForm Nothing) = H.h1 "Project not found"
   toMarkup (UpdateProjectForm (Just p)) = do
+    let ref = projectRef p
     H.h1 "Update Project"
-    H.form ! A.action ("/projects/" <> toValue (projectRef p)) ! A.method "post" $ do
+    H.form ! A.action ("/project/" <> toValue ref) ! A.method "post" $ do
       formGroup "name"      "Name"      (Just $ projectName p)
-      formGroup "reference" "Reference" (Just $ projectRef p)
+      formGroup "reference" "Reference" (Just ref)
       H.button ! A.type_ "submit" ! A.class_ "btn" $ "Submit"
+      H.a ! A.href "/projects" $ "List Projects"
+    H.form ! A.action ("/project/" <> toValue ref <> "/delete") ! A.method "post" $
+      H.button ! A.type_ "Submit" $ "Delete Project"
+
+deleteProject :: Text -> Handler Text
+deleteProject ref = do
+  liftIO $ eraseProject ref
+  return "Project Deleted."
+
+eraseProject :: Text -> IO ()
+eraseProject ref = runDB $ query ref q
+  where
+  q :: Query Text ()
+  q = statement sql encoder decoder True
+
+  sql = "delete from projects where reference = $1"
+
+  decoder :: D.Result ()
+  decoder = D.unit
+
+  encoder :: E.Params Text
+  encoder = E.value E.text
