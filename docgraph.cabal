@@ -30,6 +30,7 @@ library
                     , hasql
                     , http-api-data
                     , servant
+                    , servant-auth-cookie
                     , servant-blaze
                     , servant-server
                     , text
