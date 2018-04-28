@@ -6,6 +6,8 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import DocGraph.Document
 import DocGraph.Project
+import DocGraph.Login
+import DocGraph.User
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Servant
@@ -59,7 +61,19 @@ type Api = Get '[HTML] DocumentForm
         :> Capture "reference" Text
         :> "delete"
         :> Post '[HTML] Text
-      :<|> "static" :> Raw
+      :<|> "user"
+        :> "new"
+        :> Get '[HTML] CreateUserForm
+      :<|> "user"
+        :> ReqBody '[FormUrlEncoded] User
+        :> Post '[HTML] Text
+      :<|> "login"
+        :> Get '[HTML] CreateLoginForm
+      :<|> "login"
+        :> ReqBody '[FormUrlEncoded] Login
+        :> Post '[HTML] Text
+      :<|> "static"
+        :> Raw
 
 docgraph :: Server Api
 docgraph = getDocumentForm
@@ -75,4 +89,8 @@ docgraph = getDocumentForm
       :<|> updateProjectForm
       :<|> updateProject
       :<|> deleteProject
+      :<|> getUserForm
+      :<|> storeUser
+      :<|> getLoginForm
+      :<|> sendLogUser
       :<|> serveDirectoryWebApp "static"

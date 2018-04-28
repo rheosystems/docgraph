@@ -23,6 +23,19 @@ CREATE TABLE projects (
    name       TEXT   NOT NULL
 );
 
+CREATE TABLE users (
+useremail        TEXT PRIMARY KEY,
+ userfullnames    TEXT NULL,
+username       TEXT   NOT NULL,
+ userpassword      TEXT   NOT NULL
+);
+
+CREATE TABLE project_users (
+ user_email           TEXT REFERENCES users(useremail), 
+  project_reference     TEXT REFERENCES  projects(reference),
+     PRIMARY KEY (user_email, project_reference)  
+);
+
 -- Creating the `docgraph` user with the required permissions.
 -- Must happen after all tables, views, etc. have been created.
 DROP ROLE IF EXISTS docgraph;
