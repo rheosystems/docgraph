@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/rheosystems/docgraph.svg?branch=master)](https://travis-ci.org/rheosystems/docgraph)
+
 # docgraph
 
 Keeps changelogs and bidirectional traceability for documents.
