@@ -23,17 +23,18 @@ CREATE TABLE projects (
    name       TEXT   NOT NULL
 );
 
+-- users table
 CREATE TABLE users (
-useremail        TEXT PRIMARY KEY,
- userfullnames    TEXT NULL,
-username       TEXT   NOT NULL,
- userpassword      TEXT   NOT NULL
+  useremail       TEXT   PRIMARY KEY,
+  userfullnames   TEXT   NULL,
+  username        TEXT   NOT NULL,
+  userpassword    TEXT   NOT NULL
 );
 
 CREATE TABLE project_users (
- user_email           TEXT REFERENCES users(useremail), 
-  project_reference     TEXT REFERENCES  projects(reference),
-     PRIMARY KEY (user_email, project_reference)  
+  user_email          TEXT REFERENCES  users(useremail),
+  project_reference   TEXT REFERENCES  projects(reference),
+                           PRIMARY KEY (user_email, project_reference)
 );
 
 -- Creating the `docgraph` user with the required permissions.
