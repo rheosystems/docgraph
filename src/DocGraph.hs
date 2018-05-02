@@ -62,16 +62,10 @@ type Api = Get '[HTML] DocumentForm
         :> "delete"
         :> Post '[HTML] Text
       :<|> "users"
-       -- :> "new"
         :> Get '[HTML] CreateUserForm
       :<|> "users"
         :> ReqBody '[FormUrlEncoded] User
         :> Post '[HTML] Text
-     -- :<|> "login"
-     -- :> Get '[HTML] CreateLoginForm
-     -- :<|> "login"
-     -- :> ReqBody '[FormUrlEncoded] Login
-     -- :> Post '[HTML] Text
       :<|> "static"
         :> Raw
 
@@ -91,6 +85,4 @@ docgraph = getDocumentForm
       :<|> deleteProject
       :<|> getUserForm
       :<|> storeUser
-     -- :<|> getLoginForm
-     -- :<|> sendLogUser
       :<|> serveDirectoryWebApp "static"

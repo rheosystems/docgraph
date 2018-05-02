@@ -70,9 +70,11 @@ storeUser usr  = do
   liftIO $ insertUser usr
   return "User Created"
 
+insertUser :: User -> IO ()
 insertUser usr = runDB $ query usr q
   where
-    q :: Query User Int64
-    q = statement sql def (D.singleRow $ D.value D.int8) True
+    q :: Query User ()
+    q = statement sql def D.unit True
 
     sql = "insert into users(useremail, userfullnames, username, userpassword) values ($1, $2, $3, $4)"
+
