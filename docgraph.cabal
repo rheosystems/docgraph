@@ -45,7 +45,7 @@ library
                     DocGraph.Bootstrap
                     DocGraph.Document
                     DocGraph.User
-                  --DocGraph.Login
+                    DocGraph.Login
   default-language: Haskell2010
 
 executable docgraph-exe

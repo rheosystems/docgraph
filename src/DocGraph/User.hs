@@ -32,7 +32,7 @@ instance FromForm User where
   fromForm f = User
     <$> parseUnique "useremail"      f
     <*> parseMaybe  "userfullnames"  f
-    <*> parseUnique "username"   f
+    <*> parseUnique "username"       f
     <*> parseUnique "userpassword"   f
 
 instance Default (D.Row User) where

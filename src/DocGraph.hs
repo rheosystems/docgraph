@@ -2,11 +2,10 @@
 {-# LANGUAGE TypeOperators, DataKinds #-}
 module DocGraph where
 
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import DocGraph.Document
 import DocGraph.Project
---import DocGraph.Login
+import DocGraph.Login
 import DocGraph.User
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
@@ -66,6 +65,11 @@ type Api = Get '[HTML] DocumentForm
       :<|> "users"
         :> ReqBody '[FormUrlEncoded] User
         :> Post '[HTML] Text
+      :<|> "login"
+        :> Get '[HTML] CreateLoginForm
+      :<|> "login"
+        :> ReqBody '[FormUrlEncoded] Login
+        :> Post '[HTML] Text
       :<|> "static"
         :> Raw
 
@@ -85,4 +89,6 @@ docgraph = getDocumentForm
       :<|> deleteProject
       :<|> getUserForm
       :<|> storeUser
+      :<|> getLoginForm
+      :<|> authenticate
       :<|> serveDirectoryWebApp "static"
