@@ -1,4 +1,3 @@
-
 {-# LANGUAGE TypeOperators, DataKinds #-}
 module DocGraph where
 
@@ -9,15 +8,26 @@ import DocGraph.Login
 import DocGraph.User
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
-import Servant
+import Servant hiding (NotSecure)
 import Servant.HTML.Blaze (HTML)
 import Servant.Server (serve)
 import Control.Monad.IO.Class (liftIO)
+import Servant.Auth.Server
+
+
 
 main :: IO ()
 main = do
   putStrLn "Starting docgraph..."
-  run 3000 $ logStdoutDev $ serve (Proxy :: Proxy Api) docgraph
+  -- FIXME: key below should be read from file otherwise generated
+  -- each time server starts and invalidates existing browser cookies
+  myKey <- generateKey
+  let jwt = defaultJWTSettings myKey
+      -- FIXME: not enabling secure and excluding xsrf is done for
+      -- development and must be fixed before production deployment
+      cookie = defaultCookieSettings { cookieIsSecure = NotSecure, xsrfExcludeGet = True }
+      ctx = cookie :. jwt :. EmptyContext
+  run 3000 $ logStdoutDev $ serveWithContext (Proxy :: Proxy Api) ctx (docgraph cookie jwt)
 
 
 type Api = Get '[HTML] DocumentForm
@@ -43,7 +53,8 @@ type Api = Get '[HTML] DocumentForm
         :> Capture "reference" Text
         :> "delete"
         :> Get '[HTML] DeleteDocumentForm
-      :<|> "projects"
+      :<|> Auth '[Cookie] User
+        :> "projects"
         :> Get '[HTML] ListProjectsPage
       :<|> "projects"
         :> "new"
@@ -73,12 +84,12 @@ type Api = Get '[HTML] DocumentForm
         :> Get '[HTML] CreateLoginForm
       :<|> "login"
         :> ReqBody '[FormUrlEncoded] Login
-        :> Post '[HTML] Text
+        :> Post '[HTML] (Headers '[ Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] Text)
       :<|> "static"
         :> Raw
 
-docgraph :: Server Api
-docgraph = getDocumentForm
+docgraph :: CookieSettings -> JWTSettings -> Server Api
+docgraph cookie jwt = getDocumentForm
       :<|> getListPage
       :<|> liftIO selectDocuments
       :<|> storeDocument
@@ -96,5 +107,5 @@ docgraph = getDocumentForm
       :<|> storeUser
       :<|> getListUsersPage
       :<|> getLoginForm
-      :<|> authenticate
+      :<|> authenticate cookie jwt
       :<|> serveDirectoryWebApp "static"

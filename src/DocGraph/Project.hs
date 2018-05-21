@@ -15,6 +15,9 @@ import Data.Monoid ((<>))
 import Data.Functor.Contravariant (contramap)
 import Control.Monad (join, forM_)
 import Data.Maybe (fromMaybe)
+import DocGraph.User (User, userName)
+import Servant.Auth.Server (AuthResult(..))
+
 
 newtype ListProjectsPage = ListProjectsPage [Project]
 
@@ -38,8 +41,9 @@ instance FromForm Project where
     <$> parseUnique "reference"      f
     <*> parseUnique "name"           f
 
-listProjects :: Handler ListProjectsPage
-listProjects = ListProjectsPage <$> liftIO selectProjects
+listProjects :: AuthResult User -> Handler ListProjectsPage
+listProjects (Authenticated _user) = ListProjectsPage <$> liftIO selectProjects
+listProjects _ = throwError err401
 
 selectProjects :: IO [Project]
 selectProjects = runDB $ query () q

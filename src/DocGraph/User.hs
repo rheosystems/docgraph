@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# language FlexibleInstances #-}
 {-# language TypeOperators, DataKinds #-}
 module DocGraph.User where
@@ -22,13 +22,17 @@ import Data.Functor.Contravariant (contramap)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Default
+import GHC.Generics
+import Servant.Auth.Server
+import Data.Aeson
+
 
 data User = User
   { userEmail      :: Text
   , userFullNames  :: Maybe Text
   , userName       :: Text
   , userPassword   :: Text
-  } deriving Show
+  } deriving (Show, Generic)
 
 instance FromForm User where
   fromForm f = User
@@ -50,6 +54,13 @@ instance Default (E.Params User) where
       , contramap userName       (E.value E.text)
       , contramap userPassword   (E.value E.text)
       ]
+
+instance ToJSON User
+instance FromJSON User
+
+instance ToJWT User
+instance FromJWT User
+
 
 getUserForm :: Handler CreateUserForm
 getUserForm = return $ CreateUserForm Nothing

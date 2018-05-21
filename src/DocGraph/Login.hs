@@ -22,6 +22,7 @@ import Data.Maybe (fromMaybe)
 import Control.Monad (join, forM_)
 import Data.Int (Int64)
 import DocGraph.User
+import Servant.Auth.Server
 
 
 data Login = Login
@@ -75,9 +76,14 @@ getLoginForm :: Handler CreateLoginForm
 getLoginForm =
   return $ CreateLoginForm Nothing
 
-authenticate :: Login -> Handler Text
-authenticate login = do
+authenticate :: CookieSettings -> JWTSettings -> Login -> Handler (Headers '[ Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] Text)
+authenticate cookieSettings jwtSettings login = do
   muser <- liftIO $ checkUser login
-  return $ case muser of
-    Nothing -> "Not found"
-    Just user -> userName user
+  case muser of
+    Nothing   -> throwError err401
+    Just user -> do
+      mApplyCookies <- liftIO $ acceptLogin cookieSettings jwtSettings user
+      case mApplyCookies of
+        Nothing           -> throwError err401
+        Just applyCookies -> return $ applyCookies "User Found"
+
