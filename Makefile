@@ -8,5 +8,8 @@ schema:
 	createdb docgraph
 	psql --file=sql/schema.sql
 
+data:
+	psql --file=sql/data.sql
+
 psql:
 	PGUSER=docgraph PGPASSWORD=docgraph psql

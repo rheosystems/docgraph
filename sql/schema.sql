@@ -7,14 +7,12 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Start of table definitions
-CREATE TABLE documents (
-  document_id SERIAL PRIMARY KEY,
-  title       TEXT   NOT NULL,
-  author      TEXT   NOT NULL,
-  reference   TEXT   UNIQUE NOT NULL,
-  version     TEXT   NOT NULL,
-  keywords    TEXT   NOT NULL,
-  url	      TEXT   NULL
+-- users table
+CREATE TABLE users (
+  useremail       CITEXT PRIMARY KEY,
+  userfullnames   TEXT   NULL,
+  username        CITEXT NOT NULL,
+  userpassword    TEXT   NOT NULL
 );
 
 -- projects table
@@ -23,18 +21,25 @@ CREATE TABLE projects (
    name       TEXT   NOT NULL
 );
 
--- users table
-CREATE TABLE users (
-  useremail       TEXT   PRIMARY KEY,
-  userfullnames   TEXT   NULL,
-  username        TEXT   NOT NULL,
-  userpassword    TEXT   NOT NULL
+CREATE TABLE project_users (
+  user_email        CITEXT REFERENCES  users(useremail),
+  project_reference CITEXT REFERENCES  projects(reference),
+  PRIMARY KEY (user_email, project_reference)
 );
 
-CREATE TABLE project_users (
-  user_email          TEXT REFERENCES  users(useremail),
-  project_reference   TEXT REFERENCES  projects(reference),
-                           PRIMARY KEY (user_email, project_reference)
+CREATE TABLE documents (
+  reference   CITEXT PRIMARY KEY,
+  title       TEXT   NOT NULL,
+  version     TEXT   NOT NULL,
+  owner       CITEXT REFERENCES users(useremail),
+  keywords    TEXT   NULL,
+  url	      TEXT   NULL
+);
+
+CREATE TABLE project_documents (
+  project_reference  CITEXT REFERENCES projects(reference),
+  document_reference CITEXT REFERENCES documents(reference),
+  PRIMARY KEY (project_reference, document_reference)
 );
 
 -- Creating the `docgraph` user with the required permissions.
