@@ -22,21 +22,21 @@ import Data.Maybe (fromMaybe)
 import Data.Default
 
 data Document = Document
-  { documentTitle     :: Text
-  , documentAuthor    :: Text
-  , documentRef       :: Text
+  { documentRef       :: Text
+  , documentTitle     :: Text
   , documentVer       :: Text
-  , documentKeyWords  :: Text
+  , documentOwner     :: Text
+  , documentKey       :: Maybe Text
   , documentUrl       :: Maybe Text
   } deriving Show
 
 instance FromForm Document where
   fromForm f = Document
-    <$> parseUnique "title"     f
-    <*> parseUnique "author"    f
-    <*> parseUnique "reference" f
+    <$> parseUnique "reference" f
+    <*> parseUnique "title"     f
     <*> parseUnique "version"   f
-    <*> parseUnique "keywords"  f
+    <*> parseUnique "owner"     f
+    <*> parseMaybe  "keywords"  f
     <*> parseMaybe  "url"       f
 
 instance Default (D.Row Document) where
@@ -44,17 +44,17 @@ instance Default (D.Row Document) where
                  <*> D.value D.text
                  <*> D.value D.text
                  <*> D.value D.text
-                 <*> D.value D.text
+                 <*> D.nullableValue D.text
                  <*> D.nullableValue D.text
 
 instance Default (E.Params Document) where
   def = mconcat
-      [ contramap documentTitle    (E.value E.text)
-      , contramap documentAuthor   (E.value E.text)
-      , contramap documentRef      (E.value E.text)
-      , contramap documentVer      (E.value E.text)
-      , contramap documentKeyWords (E.value E.text)
-      , contramap documentUrl      (E.nullableValue E.text)
+      [ contramap documentRef    (E.value E.text)
+      , contramap documentTitle  (E.value E.text)
+      , contramap documentVer    (E.value E.text)
+      , contramap documentOwner  (E.value E.text)
+      , contramap documentKey    (E.nullableValue E.text)
+      , contramap documentUrl    (E.nullableValue E.text)
       ]
 
 getDocumentForm :: Handler DocumentForm
@@ -70,12 +70,12 @@ instance ToMarkup DocumentForm where
                     Nothing -> "/documents"
                     Just doc -> textValue $ "/document/" <> documentRef doc
       H.form ! A.action route ! A.method "post" $ do
-        formGroup "title" "Title"         (documentTitle <$> mdoc)
-        formGroup "author" "Author"       (documentAuthor <$> mdoc)
         formGroup "reference" "Reference" (documentRef <$> mdoc)
+        formGroup "title" "Title"         (documentTitle <$> mdoc)
         formGroup "version" "Version"     (documentVer <$> mdoc)
-        formGroup "keywords" "Key words"  (documentKeyWords <$> mdoc)
-        formGroup "url" "URL"             (join $ documentUrl <$> mdoc)
+        formGroup "owner" "Owner"         (documentOwner <$> mdoc)
+        formGroup "keywords" "Keywords"   (join $ documentKey <$> mdoc)
+        formGroup "url" "URL"            (join $ documentUrl <$> mdoc)
         H.button ! A.type_ "submit" ! A.class_ "btn btn-primary" $ "Submit"
 
 getListPage :: Handler ListPage
@@ -95,12 +95,12 @@ getdoc d =
       H.div ! A.id "headingOne" $ do
         H.h5 ! A.class_ "card-title" $ toHtml $ documentTitle d
         H.button ! A.class_ "btn btn-link" ! A.type_ "button" ! H.dataAttribute "toggle" "collapse" ! H.dataAttribute "target" ("#"<> textValue (documentRef d)) $ "My button"
-      H.div ! A.id (textValue (documentRef d)) ! A.class_ "collapse show" ! H.dataAttribute "parent" "#accordion" $ do
+      H.div ! A.class_ "collapse show" ! H.dataAttribute "parent" "#accordion" $ do
            H.div ! A.class_ "card-body" $ do
              H.ul ! A.class_ "list-group list-group-flush" $ do
-                listGroupItem "Author: "    $ documentAuthor d
-                listGroupItem "version: "   $ documentVer d
-                listGroupItem "Key words: " $ documentKeyWords d
+                listGroupItem "Owner: "    $ documentOwner d
+                listGroupItem "Version: "   $ documentVer d
+                listGroupItem "Keywords: " $ fromMaybe "" (documentKey d)
                 listGroupItem "URL: "       $ fromMaybe "url unavailable" (documentUrl d)
            H.a ! A.href ("/document/" <> textValue (documentRef d)) ! A.class_ "btn" $ "udpate"
            H.a ! A.href ("/document/" <> textValue (documentRef d) <> "/delete") ! A.class_ "btn" $ "delete"
@@ -116,7 +116,7 @@ insertDocument doc = runDB $ query doc q
     q :: Query Document Int64
     q = statement sql def (D.singleRow $ D.value D.int8) True
 
-    sql = "insert into documents(title, author, reference, version, keywords, url ) values ($1, $2, $3, $4, $5, $6) returning document_id"
+    sql = "insert into documents(reference, title, version, owner, keywords, url ) values ($1, $2, $3, $4, $5, $6)"
 
 selectDocuments :: IO [Document]
 selectDocuments = runDB $ query () q
@@ -124,7 +124,7 @@ selectDocuments = runDB $ query () q
     q :: Query () [Document]
     q = statement sql def def True
 
-    sql = "select title, author, reference, version, keywords, url from documents"
+    sql = "select reference, title, version, owner, keywords, url from documents"
 
 getUpdateDocumentForm :: Text -> Handler DocumentForm
 getUpdateDocumentForm ref = do
@@ -137,7 +137,7 @@ selectDocument ref = runDB $ query ref q
     q :: Query Text (Maybe Document)
     q = statement sql (E.value E.text) def True
 
-    sql = "select title, author, reference, version, keywords, url from documents where reference = $1"
+    sql = "select reference, title, version, owner, keywords, url from documents where reference = $1"
 
 updateDocument :: Text -> Document -> Handler Text
 updateDocument ref doc = do
@@ -150,7 +150,7 @@ replaceDocument ref doc = runDB $ query doc q
     q :: Query Document Int64
     q = statement sql def def True
 
-    sql = "update documents set title = $1, author = $2, version = $4, keywords = $5, url = $6 where reference = $3"
+    sql = "update documents set title = $2, owner = $4, version = $3, keywords = $5, url = $6 where reference = $1"
 
 deleteDocument :: Text -> Handler Text
 deleteDocument ref = do

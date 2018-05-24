@@ -65,6 +65,8 @@ type Api = Get '[HTML] DocumentForm
       :<|> "users"
         :> ReqBody '[FormUrlEncoded] User
         :> Post '[HTML] Text
+      :<|> "userlist"
+        :> Get '[HTML] ListUsers
       :<|> "login"
         :> Get '[HTML] CreateLoginForm
       :<|> "login"
@@ -89,6 +91,7 @@ docgraph = getDocumentForm
       :<|> deleteProject
       :<|> getUserForm
       :<|> storeUser
+      :<|> getListUsersPage
       :<|> getLoginForm
       :<|> authenticate
       :<|> serveDirectoryWebApp "static"
