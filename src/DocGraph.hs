@@ -12,7 +12,7 @@ import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Servant
 import Servant.HTML.Blaze (HTML)
 import Servant.Server (serve)
-
+import Control.Monad.IO.Class (liftIO)
 
 main :: IO ()
 main = do
@@ -23,6 +23,8 @@ main = do
 type Api = Get '[HTML] DocumentForm
       :<|> "documents"
         :> Get '[HTML] ListPage
+      :<|> "documents.json"
+        :> Get '[JSON] [Document]
       :<|> "documents"
         :> ReqBody '[FormUrlEncoded] Document
         :> Post '[HTML] Text
@@ -78,6 +80,7 @@ type Api = Get '[HTML] DocumentForm
 docgraph :: Server Api
 docgraph = getDocumentForm
       :<|> getListPage
+      :<|> liftIO selectDocuments
       :<|> storeDocument
       :<|> getUpdateDocumentForm
       :<|> updateDocument

@@ -1,8 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators, DataKinds #-}
 module DocGraph.Document where
 
 import Data.Monoid ((<>))
+import Data.Aeson
 import Data.Text (Text)
 import Servant
 import Control.Monad.IO.Class (liftIO)
@@ -20,6 +22,7 @@ import Data.Functor.Contravariant (contramap)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Default
+import GHC.Generics
 
 data Document = Document
   { documentRef       :: Text
@@ -28,7 +31,10 @@ data Document = Document
   , documentOwner     :: Text
   , documentKey       :: Maybe Text
   , documentUrl       :: Maybe Text
-  } deriving Show
+  } deriving (Show, Generic)
+
+instance ToJSON Document where
+  toEncoding = genericToEncoding defaultOptions
 
 instance FromForm Document where
   fromForm f = Document
