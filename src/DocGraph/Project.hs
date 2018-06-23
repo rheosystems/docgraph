@@ -15,15 +15,17 @@ import Data.Monoid ((<>))
 import Data.Functor.Contravariant (contramap)
 import Control.Monad (join, forM_)
 import Data.Maybe (fromMaybe)
-import DocGraph.User (User, userName)
+import DocGraph.User (User(..))
 import Servant.Auth.Server (AuthResult(..))
 
 
-newtype ListProjectsPage = ListProjectsPage [Project]
+data ListProjectsPage = ListProjectsPage User [Project]
 
 instance ToMarkup ListProjectsPage where
-  toMarkup (ListProjectsPage ps) = do
+  toMarkup (ListProjectsPage user ps) = do
+    let name = fromMaybe (userName user) (userFullNames user)
     H.h1 "List of Projects"
+    H.p $ "Belonging to: " <> toHtml name
     H.a ! A.href "/projects/new" $ "create project"
     H.ul $ mapM_ renderProject ps
 
@@ -42,16 +44,21 @@ instance FromForm Project where
     <*> parseUnique "name"           f
 
 listProjects :: AuthResult User -> Handler ListProjectsPage
-listProjects (Authenticated _user) = ListProjectsPage <$> liftIO selectProjects
+listProjects (Authenticated user) =
+  ListProjectsPage user <$> liftIO (selectProjects $ userEmail user)
 listProjects _ = throwError err401
 
-selectProjects :: IO [Project]
-selectProjects = runDB $ query () q
+selectProjects :: Text -> IO [Project]
+selectProjects email = runDB $ query email q
   where
-    q :: Query () [Project]
-    q = statement sql E.unit decoder True
+    q :: Query Text [Project]
+    q = statement sql (E.value E.text) decoder True
 
-    sql = "select reference, name from projects"
+    sql = "select reference, name \
+          \from projects \
+          \join project_users \
+          \on projects.reference = project_users.project_reference \
+          \where project_users.user_email = $1"
 
     decoder :: D.Result [Project]
     decoder = D.rowsList $ Project <$> D.value D.text <*> D.value D.text
