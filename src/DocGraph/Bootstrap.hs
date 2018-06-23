@@ -11,7 +11,7 @@ applyHead body = do
   H.head $ do
     H.meta ! A.charset "utf-8"
     H.meta ! A.name "viewpoint" ! A.content "width=device_width, intial-scale=1 , shrink-to-fit=no"
-    H.link ! A.rel "stylesheet" ! A.href "/static/css/bootstrap.min.css "
+    H.link ! A.rel "stylesheet" ! A.href "/static/css/bootstrap.min.css"
   H.body $ do
     H.div ! A.class_ "container" $ body
     H.script ! A.src "https://code.jquery.com/jquery-3.3.1.slim.min.js"

@@ -9,7 +9,7 @@ import Servant
 import Control.Monad.IO.Class (liftIO)
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
-import Control.Monad (forM_, join)
+import Control.Monad (forM_)
 import Web.FormUrlEncoded (FromForm, fromForm, parseUnique, parseMaybe)
 import DocGraph.Bootstrap (formGroup, listGroupItem, applyHead)
 import DocGraph.Document
@@ -86,15 +86,7 @@ selectUsers = runDB $ query () q
 
 getUser :: User -> Html
 getUser u =
-  -- H.div ! A.class_ "list-group" $
-  --   H.a ! A.href "#" ! A.class_ "list-group-item list-group-item-action flex-column align-items-start active" $ do
-  --     H.div ! A.class_ "d-flex w-100 justify-content-between" $ do
-  --       H.h5 ! A.class_ "mb-1" $ toHtml $ userName u
-  --       H.small $ toHtml $ toHtml $ userName u
-  --     H.p ! A.class_ "mb-1" $ toHtml $ userEmail u
-  --     H.small $ toHtml $ toHtml $ userEmail u
-
-   H.div ! A.class_ "card" ! A.style "width: 18rem;" $ do
+   H.div ! A.class_ "card" ! A.style "width: 18rem;" $
      H.ul ! A.class_ "list-group list-group-flush" $
        H.li ! A.class_ "list-group-item" $ toHtml $ userName u
 
@@ -104,7 +96,7 @@ instance ToMarkup CreateUserForm where
       H.h1 "Create User"
       H.form ! A.action "/users" ! A.method "post" $ do
         formGroup "useremail"     "E-mail address"   (userEmail <$> muser)
-        formGroup "userfullnames" "Full names"       (join $ userFullNames <$> muser)
+        formGroup "userfullnames" "Full names"       (userFullNames =<< muser)
         formGroup "username"  "Username"             (userName <$> muser)
         formGroup "userpassword"  "Password"         (userPassword <$> muser)
         H.button ! A.type_ "submit" ! A.class_ "btn btn-primary" $ "Submit"

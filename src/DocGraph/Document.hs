@@ -10,7 +10,7 @@ import Servant
 import Control.Monad.IO.Class (liftIO)
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
-import Control.Monad (forM_, join)
+import Control.Monad (forM_)
 import Web.FormUrlEncoded (FromForm, fromForm, parseUnique, parseMaybe)
 import DocGraph.Bootstrap (formGroup, listGroupItem, applyHead)
 import DocGraph.Database (runDB)
@@ -80,8 +80,8 @@ instance ToMarkup DocumentForm where
         formGroup "title" "Title"         (documentTitle <$> mdoc)
         formGroup "version" "Version"     (documentVer <$> mdoc)
         formGroup "owner" "Owner"         (documentOwner <$> mdoc)
-        formGroup "keywords" "Keywords"   (join $ documentKey <$> mdoc)
-        formGroup "url" "URL"            (join $ documentUrl <$> mdoc)
+        formGroup "keywords" "Keywords"   (documentKey =<< mdoc)
+        formGroup "url" "URL"             (documentUrl =<< mdoc)
         H.button ! A.type_ "submit" ! A.class_ "btn btn-primary" $ "Submit"
 
 getListPage :: Handler ListPage
@@ -102,7 +102,7 @@ getdoc d =
         H.h5 ! A.class_ "card-title" $ toHtml $ documentTitle d
         H.button ! A.class_ "btn btn-link" ! A.type_ "button" ! H.dataAttribute "toggle" "collapse" ! H.dataAttribute "target" ("#"<> textValue (documentRef d)) $ "My button"
       H.div ! A.class_ "collapse show" ! H.dataAttribute "parent" "#accordion" $ do
-           H.div ! A.class_ "card-body" $ do
+           H.div ! A.class_ "card-body" $
              H.ul ! A.class_ "list-group list-group-flush" $ do
                 listGroupItem "Owner: "    $ documentOwner d
                 listGroupItem "Version: "   $ documentVer d
